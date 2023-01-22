@@ -1,8 +1,13 @@
 ## TODO
 
 - [X] Organize the code structure in modules
-- [ ] Encoder
-- [ ] Decoder
+- [X] Encoder
+- [X] Decoder
+- [ ] Add metadata to .rq565 file
+  - [ ] Add the width, height to the .rq565 file
+  - [ ] Add the magic number to the .rq565 file
+  - [ ] Add a parser for the buffer
+- [ ] Render the image in a screen
 
 # Objetivo
 
