@@ -27,7 +27,7 @@ fn validate_files(input: &str, output: &str) -> Result<(), FileFormatError> {
   if input_extension != EXTENSION {
     return Err(FileFormatError::UnsupportedFormat {
       input: input.to_string(),
-      advice: format!("It should be {}", EXTENSION),
+      advice: format!("It should be {EXTENSION}"),
       extension_src: extension_src(input, input_extension.len()),
     });
   }
@@ -37,7 +37,7 @@ fn validate_files(input: &str, output: &str) -> Result<(), FileFormatError> {
     _ => {
       return Err(FileFormatError::UnsupportedFormat {
         input: output.to_string(),
-        advice: format!("Supported extensions: {:?}", SUPPORTED_EXTENSIONS),
+        advice: format!("Supported extensions: {SUPPORTED_EXTENSIONS:?}"),
         extension_src: extension_src(output, output_extension.len()),
       });
     }
@@ -58,6 +58,11 @@ pub(crate) fn get_decoded_buffer(buffer: Vec<u8>) -> Vec<u8> {
     let green_channel_reconstructed = (current_byte >> 5) & MOST_IMPORTANT_CHANNEL_MASK as u16;
     let blue_channel_reconstructed = current_byte & LEAST_IMPORTANT_CHANNEL_MASK as u16;
 
+    // Multiply red and blue to 2^3 and green to 2^2
+    let red_channel_reconstructed = red_channel_reconstructed * 8;
+    let green_channel_reconstructed = green_channel_reconstructed * 4;
+    let blue_channel_reconstructed = blue_channel_reconstructed * 8;
+
     output_buffer.push(red_channel_reconstructed as u8);
     output_buffer.push(green_channel_reconstructed as u8);
     output_buffer.push(blue_channel_reconstructed as u8);
@@ -75,8 +80,8 @@ fn decode_file(input: &str, output: &str) -> Result<(), Box<dyn std::error::Erro
   image::save_buffer(
     output,
     &get_decoded_buffer(buffer),
-    1080,
-    630,
+    500,
+    500,
     image::ColorType::Rgb8,
   )?;
 
@@ -86,7 +91,7 @@ fn decode_file(input: &str, output: &str) -> Result<(), Box<dyn std::error::Erro
 pub fn decode(DecodeOptions { input, output }: &DecodeOptions) -> Result<(), FileFormatError> {
   validate_files(input, output)?;
   decode_file(input, output).unwrap_or_else(|e| {
-    eprintln!("Error: {}", e);
+    eprintln!("Error: {e}");
   });
 
   Ok(())
@@ -100,11 +105,16 @@ mod tests {
   #[test]
   fn test_decode() {
     let ppm_raw_data = b"P3
-2 2
+3 3
 255
-255 0 0 
-0 255 0 
-0 0 255 
+255 0 0
+0 255 0
+0 0 255
+0 0 0
+255 0 255
+0 0 0
+1 1 1
+120 120 120
 255 255 255";
 
     // Encode
@@ -115,13 +125,8 @@ mod tests {
     std::io::Write::write_all(
       &mut output_file,
       &get_encoded_buffer(image)
-        .into_iter()
-        .clone()
-        .into_iter()
-        // .map(|two_bytes| [(two_bytes >> 8) as u8, two_bytes as u8])
-        .map(|two_bytes| [two_bytes as u8, (two_bytes >> 8) as u8])
-        .flatten()
-        .inspect(|byte| println!("{}", byte))
+        .iter()
+        .flat_map(|two_bytes| [*two_bytes as u8, (*two_bytes >> 8) as u8])
         .collect::<Vec<u8>>(),
     )
     .unwrap();
@@ -135,13 +140,12 @@ mod tests {
 
     // Check the bytes in this buffer
     println!("=========");
-    buffer
-      .iter()
-      .inspect(|byte| println!("{}", *byte))
-      .for_each(drop);
+    buffer.iter().for_each(|byte| {
+      println!("{byte:08b}");
+    });
 
     let output_buffer = get_decoded_buffer(buffer);
-    println!("Output buffer: {:?}", output_buffer);
+    println!("Output buffer: {output_buffer:?}");
 
     // // Iterate over the buffer and print the values
     for (i, chunk) in output_buffer.chunks_exact(3).enumerate() {

@@ -7,6 +7,7 @@
   - [ ] Add the width, height to the .rq565 file
   - [ ] Add the magic number to the .rq565 file
   - [ ] Add a parser for the buffer
+    - [ ] TryInto or Into
 - [ ] Render the image in a screen
 
 # Objetivo
