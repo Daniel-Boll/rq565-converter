@@ -9,7 +9,7 @@
   - [X] Add a parser for the buffer
     - [X] TryInto or Into
 - [X] Add a augment option to decode
-- [ ] Render the image in a screen
+- [X] Render the image in a screen
 
 # Objetivo
 

@@ -1,4 +1,7 @@
-use crate::converter::{decode, encode};
+use crate::{
+  converter::{decode, encode},
+  render::renderer,
+};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -17,5 +20,5 @@ pub enum Commands {
   /// Decode an image from the RustQuant565 format
   Decode(decode::DecodeOptions),
 
-  // Render(render::RenderOptions),
+  Render(renderer::RendererOptions),
 }

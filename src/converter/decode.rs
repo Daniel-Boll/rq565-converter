@@ -12,7 +12,7 @@ use crate::utils::{
 
 use super::encode::EncodedBuffer;
 
-static AUGMENT: Mutex<bool> = Mutex::new(false);
+pub(crate) static AUGMENT: Mutex<bool> = Mutex::new(false);
 
 /// Decode a file from the RQ565 format
 #[derive(Args)]
