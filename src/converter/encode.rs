@@ -1,5 +1,6 @@
+#![allow(unused)]
+
 use clap::Args;
-use image::ImageBuffer;
 
 use crate::utils::{
   constants::{
@@ -47,23 +48,95 @@ pub(crate) fn validate_files(input: &str, output: &str) -> Result<(), FileFormat
   Ok(())
 }
 
-pub(crate) fn get_encoded_buffer(image: ImageBuffer<image::Rgb<u8>, Vec<u8>>) -> Vec<u16> {
-  let (width, height) = (image.width(), image.height());
+pub(crate) struct EncodedBuffer {
+  data: Vec<u16>,
+}
 
-  let mut buffer: Vec<u16> = Vec::new();
-  for y in 0..height {
-    for x in 0..width {
-      let [mut red, mut green, mut blue] = image.get_pixel(x, y).0;
-
-      red &= LEAST_IMPORTANT_CHANNEL_MASK;
-      green &= MOST_IMPORTANT_CHANNEL_MASK;
-      blue &= LEAST_IMPORTANT_CHANNEL_MASK;
-
-      buffer.push((red as u16) << 11 | (green as u16) << 5 | blue as u16);
+impl EncodedBuffer {
+  pub fn new() -> Self {
+    Self {
+      data: vec![0x5152_u16],
     }
   }
 
-  buffer
+  pub fn set_width_and_height(&mut self, (width, height): (u32, u32)) {
+    self.data.push(width as u16);
+    self.data.push(height as u16);
+  }
+
+  pub fn get_width(&self) -> u16 {
+    self.data[1]
+  }
+
+  pub fn get_height(&self) -> u16 {
+    self.data[2]
+  }
+
+  pub fn get_pixel(&self, x: u16, y: u16) -> u16 {
+    self.data[(y * self.get_width() + x + 2) as usize]
+  }
+
+  pub fn get_pixels(&self) -> &[u16] {
+    &self.data[3..]
+  }
+
+  pub fn push(&mut self, value: u16) {
+    self.data.push(value);
+  }
+
+  pub fn len(&self) -> usize {
+    self.data.len()
+  }
+
+  pub fn bytes(&self) -> Vec<u8> {
+    self
+      .data
+      .iter()
+      .flat_map(|two_bytes| [*two_bytes as u8, (*two_bytes >> 8) as u8])
+      .collect::<Vec<u8>>()
+  }
+
+  pub fn data(&self) -> Vec<u8> {
+    self
+      .data
+      .iter()
+      .skip(3)
+      .flat_map(|two_bytes| [*two_bytes as u8, (*two_bytes >> 8) as u8])
+      .collect::<Vec<u8>>()
+  }
+}
+
+impl From<Vec<u8>> for EncodedBuffer {
+  fn from(value: Vec<u8>) -> Self {
+    let mut data = value
+      .chunks(2)
+      .map(|two_bytes| (two_bytes[0] as u16) | ((two_bytes[1] as u16) << 8))
+      .collect::<Vec<u16>>();
+
+    if data[0] != 0x5152 {
+      panic!("Invalid data");
+    }
+
+    Self { data }
+  }
+}
+
+impl From<image::ImageBuffer<image::Rgb<u8>, Vec<u8>>> for EncodedBuffer {
+  fn from(value: image::ImageBuffer<image::Rgb<u8>, Vec<u8>>) -> Self {
+    let (width, height) = (value.width(), value.height());
+
+    let mut buffer = EncodedBuffer::new();
+    buffer.set_width_and_height((width, height));
+
+    for y in 0..height {
+      for x in 0..width {
+        let [mut red, mut green, mut blue] = value.get_pixel(x, y).0;
+        buffer.push(((red >> 3) as u16) << 11 | ((green >> 2) as u16) << 5 | ((blue >> 3) as u16));
+      }
+    }
+
+    buffer
+  }
 }
 
 pub(crate) fn parse_image(input: &str, output: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -72,13 +145,9 @@ pub(crate) fn parse_image(input: &str, output: &str) -> Result<(), Box<dyn std::
 
   let mut output_file = std::fs::File::create(output)?;
 
-  std::io::Write::write_all(
-    &mut output_file,
-    &get_encoded_buffer(image)
-      .iter()
-      .flat_map(|two_bytes| [*two_bytes as u8, (*two_bytes >> 8) as u8])
-      .collect::<Vec<u8>>(),
-  )?;
+  let buffer: EncodedBuffer = image.into();
+
+  std::io::Write::write_all(&mut output_file, &buffer.bytes())?;
 
   Ok(())
 }

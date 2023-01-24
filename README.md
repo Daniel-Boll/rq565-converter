@@ -3,11 +3,11 @@
 - [X] Organize the code structure in modules
 - [X] Encoder
 - [X] Decoder
-- [ ] Add metadata to .rq565 file
-  - [ ] Add the width, height to the .rq565 file
-  - [ ] Add the magic number to the .rq565 file
-  - [ ] Add a parser for the buffer
-    - [ ] TryInto or Into
+- [X] Add metadata to .rq565 file
+  - [X] Add the width, height to the .rq565 file
+  - [X] Add the magic number to the .rq565 file
+  - [X] Add a parser for the buffer
+    - [X] TryInto or Into
 - [ ] Render the image in a screen
 
 # Objetivo

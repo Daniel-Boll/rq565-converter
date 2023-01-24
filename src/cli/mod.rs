@@ -16,5 +16,6 @@ pub enum Commands {
 
   /// Decode an image from the RustQuant565 format
   Decode(decode::DecodeOptions),
-  // NOTE: perhaps a visualizer of the encoded image would be cool
+
+  // Render(render::RenderOptions),
 }

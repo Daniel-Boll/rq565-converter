@@ -8,6 +8,8 @@ use crate::utils::{
   file::{extension_src, extract_extension},
 };
 
+use super::encode::EncodedBuffer;
+
 /// Decode a file from the RQ565 format
 #[derive(Args)]
 pub struct DecodeOptions {
@@ -77,11 +79,15 @@ fn decode_file(input: &str, output: &str) -> Result<(), Box<dyn std::error::Erro
   let mut buffer: Vec<u8> = Vec::new();
   std::io::Read::read_to_end(&mut input_file, &mut buffer)?;
 
+  let buffer: EncodedBuffer = buffer.into();
+
+  let (width, height) = (buffer.get_width() as u32, buffer.get_height() as u32);
+
   image::save_buffer(
     output,
-    &get_decoded_buffer(buffer),
-    500,
-    500,
+    &get_decoded_buffer(buffer.data()),
+    width,
+    height,
     image::ColorType::Rgb8,
   )?;
 
