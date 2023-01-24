@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 use clap::Args;
 
 use crate::utils::{
@@ -10,6 +12,8 @@ use crate::utils::{
 
 use super::encode::EncodedBuffer;
 
+static AUGMENT: Mutex<bool> = Mutex::new(false);
+
 /// Decode a file from the RQ565 format
 #[derive(Args)]
 pub struct DecodeOptions {
@@ -20,6 +24,10 @@ pub struct DecodeOptions {
   /// The output file to write
   #[clap(short, long)]
   output: String,
+
+  /// Augment the pixels back to it's full range
+  #[clap(short, long, default_value = "false")]
+  augment: bool,
 }
 
 fn validate_files(input: &str, output: &str) -> Result<(), FileFormatError> {
@@ -61,9 +69,20 @@ pub(crate) fn get_decoded_buffer(buffer: Vec<u8>) -> Vec<u8> {
     let blue_channel_reconstructed = current_byte & LEAST_IMPORTANT_CHANNEL_MASK as u16;
 
     // Multiply red and blue to 2^3 and green to 2^2
-    let red_channel_reconstructed = red_channel_reconstructed * 8;
-    let green_channel_reconstructed = green_channel_reconstructed * 4;
-    let blue_channel_reconstructed = blue_channel_reconstructed * 8;
+    let (red_channel_reconstructed, green_channel_reconstructed, blue_channel_reconstructed) =
+      if *AUGMENT.lock().unwrap() {
+        (
+          red_channel_reconstructed * 8,
+          green_channel_reconstructed * 4,
+          blue_channel_reconstructed * 8,
+        )
+      } else {
+        (
+          red_channel_reconstructed,
+          green_channel_reconstructed,
+          blue_channel_reconstructed,
+        )
+      };
 
     output_buffer.push(red_channel_reconstructed as u8);
     output_buffer.push(green_channel_reconstructed as u8);
@@ -94,7 +113,15 @@ fn decode_file(input: &str, output: &str) -> Result<(), Box<dyn std::error::Erro
   Ok(())
 }
 
-pub fn decode(DecodeOptions { input, output }: &DecodeOptions) -> Result<(), FileFormatError> {
+pub fn decode(
+  DecodeOptions {
+    input,
+    output,
+    augment,
+  }: &DecodeOptions,
+) -> Result<(), FileFormatError> {
+  *AUGMENT.lock().unwrap() = *augment;
+
   validate_files(input, output)?;
   decode_file(input, output).unwrap_or_else(|e| {
     eprintln!("Error: {e}");

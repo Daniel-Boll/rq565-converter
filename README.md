@@ -8,6 +8,7 @@
   - [X] Add the magic number to the .rq565 file
   - [X] Add a parser for the buffer
     - [X] TryInto or Into
+- [X] Add a augment option to decode
 - [ ] Render the image in a screen
 
 # Objetivo
