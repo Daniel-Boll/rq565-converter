@@ -4,7 +4,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Point;
 use sdl2::ttf::Font;
 
-use crate::converter::decode::{get_decoded_buffer, AUGMENT};
+use crate::converter::decode::get_decoded_buffer;
 use crate::converter::encode::EncodedBuffer;
 use crate::utils::constants::EXTENSION;
 use crate::utils::errors::FileFormatError;
@@ -75,7 +75,7 @@ pub(crate) fn draw_image(
   buffer: EncodedBuffer,
   file_size: u64,
 ) {
-  let mut image = get_decoded_buffer(buffer.data());
+  let image = get_decoded_buffer(buffer.clone());
   let mut running = true;
   let mut show_size = false;
   while running {
@@ -88,14 +88,6 @@ pub(crate) fn draw_image(
           ..
         } => {
           running = false;
-        }
-        sdl2::event::Event::KeyDown {
-          keycode: Some(sdl2::keyboard::Keycode::R),
-          ..
-        } => {
-          let augment = !*AUGMENT.lock().unwrap();
-          *AUGMENT.lock().unwrap() = augment;
-          image = get_decoded_buffer(buffer.data());
         }
         sdl2::event::Event::KeyDown {
           keycode: Some(sdl2::keyboard::Keycode::T),
